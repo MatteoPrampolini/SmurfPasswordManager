@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <link href="./index.css" rel="stylesheet">
+
+    <!-- <link rel="stylesheet" href="../node_modules/bulma/css/bulma.css"> -->
+    <title>Smurf Password Manager</title>
+  </head>
+  <body>
+    <div class="horizontal-container">
+      <input id="open_client_btn" class="button" type="button"  value="Open Client">
+      <h1 class="title">Smurf Password Manager</h1>
+      <input id="open_settings_btn" class="button" type="button"  value="Settings">
+    </div>
+        <div class="container">
+        <form class="box" id="accounts_form">
+            <div class="control has-icons-right">
+              <label class="label">Select Account:</label>
+              <span class="icon is-small is-right">
+                <i class="fas fa-trash-alt fav-icon" id="trash_icon"></i>
+              </span>
+            </div>
+          <button id="add_account_btn" class="long_button button is-info is-light">Add account</button>
+        </form>
+      <!-- <button class="button is-primary">Sign in</button> -->
+      </div>
+    <script defer src="./render.js"></script>
+  </body>
+</html>
