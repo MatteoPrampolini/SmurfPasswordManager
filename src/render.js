@@ -11,10 +11,12 @@ const fs = require('fs');
 const open_client_btn = document.getElementById("open_client_btn");
 const add_account_btn = document.getElementById("add_account_btn");
 var accounts_form = document.getElementById("accounts_form");
+var settings_form = document.getElementById("settings_form");
 var should_delete = false;
 var account_array = {};
-const file_name = "./src/accounts.json";
-
+var settings_array = {};
+const account_file = "./src/accounts.json";
+const settings_file = "./src/settings.json";
 //il bottone open client e' inutile. se il client e' chiuso lo apro con account_li click()
 //HANDLERS
 open_client_btn.addEventListener("click", function() { //open client button handler
@@ -31,7 +33,23 @@ open_client_btn.addEventListener("click", function() { //open client button hand
 });
 
 document.addEventListener('click', function(e) { //swap eye icon
-	if (e.target.id == "eye_icon") {
+	//e.preventDefault();
+	if(e.target.id=="open_settings_btn" || e.target.id=="settings_icon"){
+		if(settings_form.classList.contains('form-hidden')){
+			accounts_form.classList.add('form-hidden');
+			settings_form.classList.remove('form-hidden');
+			settings_form.classList.add('doFadeIn');
+		}
+		else{
+			settings_form.classList.add('form-hidden');
+			accounts_form.classList.remove('form-hidden');
+			accounts_form.classList.add('doFadeIn');
+
+		}
+
+	}
+	
+	else if (e.target.id == "eye_icon") {
 		let password = document.getElementsByClassName("password_type")[0];
 		if (e.target.classList.contains("fa-eye")) {
 			password.type = "password";
@@ -41,9 +59,10 @@ document.addEventListener('click', function(e) { //swap eye icon
 			e.target.classList.replace('fa-eye-slash', 'fa-eye');
 		}
 	}
-	if (e.target.id == "trash_icon") {
+	else if (e.target.id == "trash_icon") {
 		var elements = accounts_form.getElementsByClassName("account_li");
 		if (should_delete == false) {
+			e.target.parentNode.classList.replace('has-text-info','has-text-danger');
 			for (let i = 0; i < elements.length; i++) {
 				{
 					elements[i].classList.replace('is-link', 'is-danger');
@@ -53,6 +72,7 @@ document.addEventListener('click', function(e) { //swap eye icon
 		}
 		//trash clicked twice
 		else {
+			e.target.parentNode.classList.replace('has-text-danger','has-text-info');
 			for (let i = 0; i < elements.length; i++) {
 				{
 					elements[i].classList.replace('is-danger', 'is-link');
@@ -63,7 +83,7 @@ document.addEventListener('click', function(e) { //swap eye icon
 		}
 
 	}
-	if (e.target.classList.contains("is-outlined")) {
+	else if (e.target.classList.contains("is-outlined")) {
 		if (should_delete) {
 			let account = e.target.textContent;
 			myConsole.log(account);
@@ -80,6 +100,11 @@ document.addEventListener('click', function(e) { //swap eye icon
 accounts_form.addEventListener("click", function() {
 
 	event.preventDefault();
+
+});
+settings_form.addEventListener("click", function() {
+
+	//event.preventDefault();
 
 });
 accounts_form.addEventListener("keypress", function(event) { //on Enter
@@ -122,6 +147,12 @@ add_account_btn.addEventListener("click", function() { //add account pressed
 		addAndUpdate(username[0].value, password[0].value);
 
 	}
+});
+save_settings_btn.addEventListener("click", function() {
+	//myConsole.log(document.getElementById("lol_input_file"));
+	let path=document.getElementById("lol_input_file").files[0].path;
+
+	myConsole.log(path);
 });
 //FUNCTIONS
 const isRunning = (query, cb) => {
@@ -181,11 +212,11 @@ function checkInputValidity(username, password) {
 async function appendAccountToFile(username, password) {
 	account_array[username] = password;
 
-	fs.writeFile(file_name, JSON.stringify(account_array), function(err) {
+	fs.writeFile(account_file, JSON.stringify(account_array), function(err) {
 		return new Promise(resolve => {
 			setTimeout(() => {
 				resolve(true);
-			}, 2000);
+			}, 500);
 		});
 
 	});
@@ -194,11 +225,11 @@ async function removeAccountFromFile(username) {
 	myConsole.log("REMOVE");
 
 	delete account_array[username];
-	fs.writeFile(file_name, JSON.stringify(account_array), function(err) {
+	fs.writeFile(account_file, JSON.stringify(account_array), function(err) {
 		return new Promise(resolve => {
 			setTimeout(() => {
 				resolve(true);
-			}, 2000);
+			}, 500);
 		});
 
 	});
@@ -212,7 +243,7 @@ async function fromFileLoadAccounts() {
 	account_array = await _fromFileLoadAccounts();
 }
 async function _fromFileLoadAccounts() {
-	fs.readFile(file_name, function(err, data) {
+	fs.readFile(account_file, function(err, data) {
 		var json = JSON.parse(data);
 		account_array = JSON.parse(data);
 		Object.entries(json).forEach((entry) => {
@@ -226,7 +257,7 @@ async function _fromFileLoadAccounts() {
 		return new Promise(resolve => {
 			setTimeout(() => {
 				resolve(account_array);
-			}, 2000);
+			}, 500);
 		});
 
 
@@ -282,8 +313,9 @@ async function updateTrashIcon() {
 	updateJson().then(function() {
 		if (Object.keys(account_array).length !== 0) {
 
-			trash.parentNode.classList.add('has-text-danger');
+			trash.parentNode.classList.add('has-text-info');
 		} else {
+			trash.parentNode.classList.remove('has-text-info');
 			trash.parentNode.classList.remove('has-text-danger');
 		}
 	});
@@ -302,15 +334,32 @@ async function removeAndUpdate(account) {
 }
 
 function updateJson(new_json) {
-	fs.readFile(file_name, function(err, data) {
+	fs.readFile(account_file, function(err, data) {
 		var json = JSON.parse(data);
 		account_array = JSON.parse(data);
 
 	});
+
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve(account_array);
-		}, 2000);
+		}, 300);
+	});
+}
+async function readSettingsFromFile(settings_file) {
+
+	settings_array= await _readSettingsFromFile(settings_file);
+}
+function _readSettingsFromFile(settings_file) {
+	fs.readFile(settings_file, function(err, data) {
+		var json = JSON.parse(data);
+		settings_array = JSON.parse(data);
+	});
+
+	return new Promise(resolve => {
+		setTimeout(() => {
+			resolve(settings_array);
+		}, 300);
 	});
 }
 //MAIN CODE, no need to wait for page loading cause defer;
@@ -319,5 +368,5 @@ isRunning('RiotClientUx.exe', (status) => {
 		open_client_btn.disabled = true;
 	}
 })
-
+settings_array= readSettingsFromFile(settings_file);
 updateAccountList();
