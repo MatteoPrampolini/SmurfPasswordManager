@@ -10,13 +10,16 @@ const fs = require('fs');
 //INDEX.HTML ELEMENTS
 const open_client_btn = document.getElementById("open_client_btn");
 const add_account_btn = document.getElementById("add_account_btn");
+const detect_client_btn = document.getElementById("detect_client_btn");
 var accounts_form = document.getElementById("accounts_form");
 var settings_form = document.getElementById("settings_form");
+var settings_result_label=document.getElementById("settings_result_label");
 var should_delete = false;
 var account_array = {};
 var settings_array = {};
 const account_file = "./src/accounts.json";
 const settings_file = "./src/settings.json";
+var client_path;
 //il bottone open client e' inutile. se il client e' chiuso lo apro con account_li click()
 //HANDLERS
 open_client_btn.addEventListener("click", function() { //open client button handler
@@ -83,7 +86,7 @@ document.addEventListener('click', function(e) { //swap eye icon
 		}
 
 	}
-	else if (e.target.classList.contains("is-outlined")) {
+	else if (e.target.classList.contains("account_li")) {
 		if (should_delete) {
 			let account = e.target.textContent;
 			myConsole.log(account);
@@ -93,6 +96,10 @@ document.addEventListener('click', function(e) { //swap eye icon
 
 		} else {
 			myConsole.log("clickato nome account");
+			//1 se processo client aperto-> logga
+			//2 se processo chiuso-> apri programma da settings_array["clientPath"]
+			//se 2 da errore notificare e dire all'user di andare nelle settings e rilevare il client
+
 		}
 
 	}
@@ -135,6 +142,18 @@ accounts_form.addEventListener("keypress", function(event) { //on Enter
 		event.preventDefault();
 	}
 });
+detect_client_btn.addEventListener("click", function() {
+	event.preventDefault();
+	settings_result_label.innerHTML="Open your client please";
+	settings_result_label.classList.remove("form-hidden");
+	//settings_result_label.style.opacity=0;
+	settings_result_label.classList.add("animate-flicker");
+
+
+	detectClient();
+	//myConsole.log(result);
+	//getRiotPath();
+});
 add_account_btn.addEventListener("click", function() { //add account pressed
 	event.preventDefault();
 	let username = document.getElementsByClassName("newacc_input");
@@ -148,12 +167,12 @@ add_account_btn.addEventListener("click", function() { //add account pressed
 
 	}
 });
-save_settings_btn.addEventListener("click", function() {
-	//myConsole.log(document.getElementById("lol_input_file"));
-	let path=document.getElementById("lol_input_file").files[0].path;
+// save_settings_btn.addEventListener("click", function() {
+// 	//myConsole.log(document.getElementById("lol_input_file"));
+// 	let path=document.getElementById("lol_input_file").files[0].path;
 
-	myConsole.log(path);
-});
+// 	myConsole.log(path);
+// });
 //FUNCTIONS
 const isRunning = (query, cb) => {
 	let platform = process.platform;
@@ -172,10 +191,91 @@ const isRunning = (query, cb) => {
 			break;
 	}
 	exec(cmd, (err, stdout, stderr) => {
+		
+		cb(stdout.toLowerCase().indexOf(query.toLowerCase()) > -1);
+	});
+}
+const isRunning2 = (query, cb) => {
+	let platform = process.platform;
+	let cmd = '';
+	switch (platform) {
+		case 'win32':
+			cmd = `tasklist`;
+			break;
+		case 'darwin':
+			cmd = `ps -ax | grep ${query}`;
+			break;
+		case 'linux':
+			cmd = `ps -A`;
+			break;
+		default:
+			break;
+	}
+	exec(cmd, (err, stdout, stderr) => {
+		
 		cb(stdout.toLowerCase().indexOf(query.toLowerCase()) > -1);
 	});
 }
 
+function detectClient(){
+		getRiotPath();
+		//myConsole.log(client_path);
+		 if (!client_path)
+		{ setTimeout(() => {
+			
+
+			detectClient();
+			if(!client_path)
+			{	detect_client_btn.classList.add('is-loading');
+				
+			}
+			else
+			{
+
+				detect_client_btn.classList.remove('is-loading');
+			}
+		}, 2000);
+	}
+
+	if (client_path){
+		myConsole.log(client_path);		
+		detect_client_btn.classList.remove('is-loading');
+		//settings_result_label.classList.remove("form-hidden");
+		//settings_result_label.style.opacity=0;
+		settings_result_label.classList.remove("animate-flicker");
+		settings_result_label.style.opacity=1;
+		settings_result_label.innerHTML="Done";
+		settings_result_label.style.color="hsl(204, 86%, 53%)";
+		settings_array['clientPath']=client_path;
+		saveSetting();
+
+	}
+
+
+}
+
+async function getRiotPath(cb) {
+	let platform = process.platform;
+	let cmd = '';
+	switch (platform) {
+		case 'win32':
+			cmd = `wmic process where "name='RiotClientServices.exe'" get ExecutablePath`;
+			break;
+		case 'darwin':
+			//cmd = `ps -ax | grep ${query}`;
+			break;
+		case 'linux':
+			//cmd = `ps -A`;
+			break;
+		default:
+			break;
+	}
+		exec(cmd, (err, stdout, stderr) => {
+			let path=stdout.split("\n")[1].trim();
+			client_path=path;
+			
+		});
+}
 
 function fillAccountDivWithInputs() {
 	//username
@@ -216,7 +316,7 @@ async function appendAccountToFile(username, password) {
 		return new Promise(resolve => {
 			setTimeout(() => {
 				resolve(true);
-			}, 500);
+			}, 200);
 		});
 
 	});
@@ -229,7 +329,7 @@ async function removeAccountFromFile(username) {
 		return new Promise(resolve => {
 			setTimeout(() => {
 				resolve(true);
-			}, 500);
+			}, 200);
 		});
 
 	});
@@ -257,7 +357,7 @@ async function _fromFileLoadAccounts() {
 		return new Promise(resolve => {
 			setTimeout(() => {
 				resolve(account_array);
-			}, 500);
+			}, 200);
 		});
 
 
@@ -363,10 +463,17 @@ function _readSettingsFromFile(settings_file) {
 	});
 }
 //MAIN CODE, no need to wait for page loading cause defer;
-isRunning('RiotClientUx.exe', (status) => {
+isRunning2('RiotClientServices.exe', (status) => {
 	if (status) {
 		open_client_btn.disabled = true;
 	}
 })
+function saveSetting(){
+	
+	fs.writeFile(settings_file, JSON.stringify(settings_array, null, "\t"), function (err) {
+	  });
+
+}
 settings_array= readSettingsFromFile(settings_file);
+
 updateAccountList();

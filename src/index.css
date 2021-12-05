@@ -67,10 +67,24 @@ body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes changeColor {
+  from {color: hsl(171, 100%, 41%);}
+  to {color: hsl(204, 86%, 53%);}
+}
 .doFadeIn {
   -webkit-animation:fadein forwards ease-in 150ms;
   animation:fadein forwards ease-in 150ms;
 }
+@keyframes flickerAnimation { /* flame pulses */
+  0%   { opacity:0; }
+  50%  { opacity:1; }
+  100% { opacity:0; }
+}
+.animate-flicker {
+    opacity:1;  
+    animation: flickerAnimation 6s infinite ease-in-out;
+}
+
 
 .form-hidden{
   display: none;
@@ -110,4 +124,14 @@ body {
 }
 .highlight-color{
   color:#9abede;
+}
+#save_settings_btn{
+  margin-top: 75px;
+}
+#settings_result_label{
+  color:#4a4a4a;
+  width:100%;
+  margin-top: 80px;
+  font-size: 25px;
+  text-align: center;
 }
