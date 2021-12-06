@@ -3,6 +3,7 @@ const {
 	remote
 } = require('electron');
 const exec = require('child_process').exec;
+const execFile = require('child_process').execFile;
 var nodeConsole = require('console'); //debug
 var myConsole = new nodeConsole.Console(process.stdout, process.stderr); //debug
 const path = require('path');
@@ -23,21 +24,23 @@ var client_path;
 //il bottone open client e' inutile. se il client e' chiuso lo apro con account_li click()
 //HANDLERS
 open_client_btn.addEventListener("click", function() { //open client button handler
-	isRunning('RiotClientUx.exe', (status) => {
-		if (!status) {
-			id = "C:\\Riot Games\\Riot Client\\RiotClientServices.exe";
-			var dirgame = path.dirname(id) + '\\\\';
-			var namegame = path.basename(id);
-			exec(namegame, {
-				cwd: dirgame
-			});
-		}
-	})
+	// isRunning('RiotClientServices.exe', (status) => {
+	// 	if (!status) {
+	// 		id = client_path;
+	// 		var dirgame = path.dirname(id); //+ '\\\\';
+	// 		var namegame = path.basename(id);
+	// 		exec(namegame, {
+	// 			cwd: dirgame
+	// 		});
+	// 	}
+	// })
 });
 
-document.addEventListener('click', function(e) { //swap eye icon
+document.addEventListener('click', function(e) {  //settings button clicked
 	//e.preventDefault();
 	if(e.target.id=="open_settings_btn" || e.target.id=="settings_icon"){
+		account_result_label.classList.add("form-hidden");	
+		account_result_label.classList.remove("animate-flicker");
 		if(settings_form.classList.contains('form-hidden')){
 			accounts_form.classList.add('form-hidden');
 			settings_form.classList.remove('form-hidden');
@@ -92,15 +95,26 @@ document.addEventListener('click', function(e) { //swap eye icon
 			myConsole.log(account);
 			should_delete = false;
 			removeAndUpdate(account);
+		} 
 
+		
+		else {
+				myConsole.log("clickato nome account");
+				isRunning('RiotClientServices.exe', (status) => {
+					if (status) {
+						//open_client_btn.disabled = true;
+						myConsole.log("client gia' aperto");
+					}
+					else{ //open client
+						myConsole.log("client chiuso. ora apro");
+						openClient();
+						autoLogin(e.target.textContent);
+						
 
-		} else {
-			myConsole.log("clickato nome account");
-			//1 se processo client aperto-> logga
-			//2 se processo chiuso-> apri programma da settings_array["clientPath"]
-			//se 2 da errore notificare e dire all'user di andare nelle settings e rilevare il client
+					}
+				});
 
-		}
+			}
 
 	}
 });
@@ -148,7 +162,8 @@ detect_client_btn.addEventListener("click", function() {
 	settings_result_label.classList.remove("form-hidden");
 	//settings_result_label.style.opacity=0;
 	settings_result_label.classList.add("animate-flicker");
-
+	settings_array["clientPath"]=undefined;
+	client_path=undefined;
 
 	detectClient();
 	//myConsole.log(result);
@@ -174,6 +189,32 @@ add_account_btn.addEventListener("click", function() { //add account pressed
 // 	myConsole.log(path);
 // });
 //FUNCTIONS
+const openClient =()=>{
+	client_path=settings_array["clientPath"];
+	if (!client_path)
+	{
+		myConsole.log("clientPath not defined");
+		updateAccount_error_label();
+
+	}
+	else{
+		execFile(client_path, function(err, data) { 
+			
+			if (err){
+				myConsole.log("non ho trovato il client");
+				updateAccount_error_label();
+			}
+			//myConsole.log(err);                  
+		});  
+	}
+ }
+
+ function updateAccount_error_label(){
+	account_result_label.classList.remove("form-hidden");	
+	account_result_label.classList.add("animate-flicker");
+		
+
+ }
 const isRunning = (query, cb) => {
 	let platform = process.platform;
 	let cmd = '';
@@ -195,27 +236,7 @@ const isRunning = (query, cb) => {
 		cb(stdout.toLowerCase().indexOf(query.toLowerCase()) > -1);
 	});
 }
-const isRunning2 = (query, cb) => {
-	let platform = process.platform;
-	let cmd = '';
-	switch (platform) {
-		case 'win32':
-			cmd = `tasklist`;
-			break;
-		case 'darwin':
-			cmd = `ps -ax | grep ${query}`;
-			break;
-		case 'linux':
-			cmd = `ps -A`;
-			break;
-		default:
-			break;
-	}
-	exec(cmd, (err, stdout, stderr) => {
-		
-		cb(stdout.toLowerCase().indexOf(query.toLowerCase()) > -1);
-	});
-}
+
 
 function detectClient(){
 		getRiotPath();
@@ -238,13 +259,13 @@ function detectClient(){
 	}
 
 	if (client_path){
-		myConsole.log(client_path);		
+		//myConsole.log(client_path);		
 		detect_client_btn.classList.remove('is-loading');
 		//settings_result_label.classList.remove("form-hidden");
 		//settings_result_label.style.opacity=0;
 		settings_result_label.classList.remove("animate-flicker");
 		settings_result_label.style.opacity=1;
-		settings_result_label.innerHTML="Done";
+		settings_result_label.innerHTML='Client found. All good.<br>Press <i class="fas fa-cogs"></i> to go back.';
 		settings_result_label.style.color="hsl(204, 86%, 53%)";
 		settings_array['clientPath']=client_path;
 		saveSetting();
@@ -454,6 +475,7 @@ function _readSettingsFromFile(settings_file) {
 	fs.readFile(settings_file, function(err, data) {
 		var json = JSON.parse(data);
 		settings_array = JSON.parse(data);
+		client_path=json["clientPath"];
 	});
 
 	return new Promise(resolve => {
@@ -462,18 +484,29 @@ function _readSettingsFromFile(settings_file) {
 		}, 300);
 	});
 }
-//MAIN CODE, no need to wait for page loading cause defer;
-isRunning2('RiotClientServices.exe', (status) => {
-	if (status) {
-		open_client_btn.disabled = true;
-	}
-})
+
 function saveSetting(){
 	
 	fs.writeFile(settings_file, JSON.stringify(settings_array, null, "\t"), function (err) {
 	  });
 
 }
+function autoLogin(username){
+	isRunning('RiotClientServices', (status) => {
+		if (!status) {
+			id = client_path;
+			var dirgame = path.dirname(id);
+			var namegame = path.basename(id);
+			exec(namegame, {
+				cwd: dirgame
+			});
+		}
+		//funzione che aspetta che il client sia effittivamente aperto e che filla i campi
+	});
+
+}
+//MAIN CODE, no need to wait for page loading cause defer;
+
 settings_array= readSettingsFromFile(settings_file);
 
 updateAccountList();

@@ -128,10 +128,15 @@ body {
 #save_settings_btn{
   margin-top: 75px;
 }
-#settings_result_label{
+.result_label{
   color:#4a4a4a;
   width:100%;
   margin-top: 80px;
   font-size: 25px;
   text-align: center;
+}
+#account_result_label{
+
+  font-size: 15px !important;
+  margin-top: 70px !important;
 }
