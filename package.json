@@ -1,10 +1,11 @@
 {
-  "name": "Smurf Password Manager",
+  "name": "smurf-password-manager",
   "productName": "smurf-password-manager",
   "version": "1.0.0",
   "description": "Tool for managing multiple LoL accounts and fast logins.",
   "main": "src/index.js",
   "scripts": {
+    
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
@@ -19,12 +20,15 @@
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": { "icon": "src\\assets\\smurf_icon.ico"},
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "smurf-password-manager"
+            "name": "SmurfPasswordManager",
+            "setupIcon": "src\\assets\\smurf_icon.ico",
+            "iconUrl": "https://raw.githubusercontent.com/MatteoPrampolini/SmurfPasswordManager/main/src/assets/smurf_icon.ico"
+            
           }
         },
         {
@@ -49,9 +53,9 @@
     "bulma": "^0.9.3",
     "bulma-start": "^0.0.4",
     "child_process": "^1.0.2",
+    "electron-builder": "^22.14.5",
     "electron-squirrel-startup": "^1.0.0",
-    "font-awesome": "^4.7.0",
-    "jquery": "^3.6.0"
+    "font-awesome": "^4.7.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.61",
