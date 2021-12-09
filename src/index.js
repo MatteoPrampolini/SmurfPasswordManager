@@ -1,7 +1,8 @@
 const electron = require("electron");
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const $ = require('jquery');
+const url = require('url');
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
   app.quit();
@@ -9,15 +10,16 @@ if (require('electron-squirrel-startup')) { // eslint-disable-line global-requir
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
+    autoHideMenuBar: true, //questo nella release
     width: 600,
     height: 450,
     resizable: false,
-    //autoHideMenuBar: true, //questo nella release
     icon: __dirname + '/assets/smurf_icon.ico',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
       enableRemoteModule: true,
+      devTools: false
     }
   });
 

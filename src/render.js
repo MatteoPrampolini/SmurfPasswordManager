@@ -4,6 +4,7 @@ const {
 } = require('electron');
 const exec = require('child_process').exec;
 const execFile = require('child_process').execFile;
+const spawnSync = require('child_process').spawnSync;
 var nodeConsole = require('console'); //debug
 var myConsole = new nodeConsole.Console(process.stdout, process.stderr); //debug
 const path = require('path');
@@ -18,23 +19,10 @@ var settings_result_label=document.getElementById("settings_result_label");
 var should_delete = false;
 var account_array = {};
 var settings_array = {};
-const account_file = "./src/accounts.json";
-const settings_file = "./src/settings.json";
+const account_file = path.join(__dirname+ "/accounts.json");
+const settings_file = path.join(__dirname+ "/settings.json");
+const vbs_path=(path.join(__dirname,'login.vbs'));
 var client_path;
-//il bottone open client e' inutile. se il client e' chiuso lo apro con account_li click()
-//HANDLERS
-open_client_btn.addEventListener("click", function() { //open client button handler
-	// isRunning('RiotClientServices.exe', (status) => {
-	// 	if (!status) {
-	// 		id = client_path;
-	// 		var dirgame = path.dirname(id); //+ '\\\\';
-	// 		var namegame = path.basename(id);
-	// 		exec(namegame, {
-	// 			cwd: dirgame
-	// 		});
-	// 	}
-	// })
-});
 
 document.addEventListener('click', function(e) {  //settings button clicked
 	//e.preventDefault();
@@ -92,23 +80,23 @@ document.addEventListener('click', function(e) {  //settings button clicked
 	else if (e.target.classList.contains("account_li")) {
 		if (should_delete) {
 			let account = e.target.textContent;
-			myConsole.log(account);
 			should_delete = false;
+			let trash = document.getElementsByClassName("fa-trash-alt")[0];
+			trash.parentNode.classList.replace('has-text-danger','has-text-info');
 			removeAndUpdate(account);
 		} 
 
 		
 		else {
-				myConsole.log("clickato nome account");
 				isRunning('RiotClientServices.exe', (status) => {
 					if (status) {
-						//open_client_btn.disabled = true;
-						myConsole.log("client gia' aperto");
+						autoLogin(e.target.textContent,account_array[e.target.textContent]);
+					
 					}
 					else{ //open client
-						myConsole.log("client chiuso. ora apro");
-						openClient();
-						autoLogin(e.target.textContent);
+						//myConsole.log("OPENING CLIENT...");
+						openClient(e.target.textContent,account_array[e.target.textContent]);
+						
 						
 
 					}
@@ -160,13 +148,12 @@ detect_client_btn.addEventListener("click", function() {
 	event.preventDefault();
 	settings_result_label.innerHTML="Open your client please";
 	settings_result_label.classList.remove("form-hidden");
-	//settings_result_label.style.opacity=0;
 	settings_result_label.classList.add("animate-flicker");
 	settings_array["clientPath"]=undefined;
 	client_path=undefined;
 
 	detectClient();
-	//myConsole.log(result);
+	////myConsole.log(result);
 	//getRiotPath();
 });
 add_account_btn.addEventListener("click", function() { //add account pressed
@@ -182,31 +169,26 @@ add_account_btn.addEventListener("click", function() { //add account pressed
 
 	}
 });
-// save_settings_btn.addEventListener("click", function() {
-// 	//myConsole.log(document.getElementById("lol_input_file"));
-// 	let path=document.getElementById("lol_input_file").files[0].path;
 
-// 	myConsole.log(path);
-// });
 //FUNCTIONS
-const openClient =()=>{
+function openClient(username,password) {
 	client_path=settings_array["clientPath"];
 	if (!client_path)
 	{
-		myConsole.log("clientPath not defined");
 		updateAccount_error_label();
 
 	}
 	else{
-		execFile(client_path, function(err, data) { 
+		execFile(client_path, { detached: true}, function(err, data, ) { 
 			
 			if (err){
-				myConsole.log("non ho trovato il client");
 				updateAccount_error_label();
 			}
-			//myConsole.log(err);                  
 		});  
+		//myConsole.log("LOGGING IN..."");
+		autoLogin(username,password);
 	}
+   
  }
 
  function updateAccount_error_label(){
@@ -240,7 +222,6 @@ const isRunning = (query, cb) => {
 
 function detectClient(){
 		getRiotPath();
-		//myConsole.log(client_path);
 		 if (!client_path)
 		{ setTimeout(() => {
 			
@@ -259,10 +240,7 @@ function detectClient(){
 	}
 
 	if (client_path){
-		//myConsole.log(client_path);		
 		detect_client_btn.classList.remove('is-loading');
-		//settings_result_label.classList.remove("form-hidden");
-		//settings_result_label.style.opacity=0;
 		settings_result_label.classList.remove("animate-flicker");
 		settings_result_label.style.opacity=1;
 		settings_result_label.innerHTML='Client found. All good.<br>Press <i class="fas fa-cogs"></i> to go back.';
@@ -343,7 +321,7 @@ async function appendAccountToFile(username, password) {
 	});
 }
 async function removeAccountFromFile(username) {
-	myConsole.log("REMOVE");
+	//myConsole.log("REMOVE");
 
 	delete account_array[username];
 	fs.writeFile(account_file, JSON.stringify(account_array), function(err) {
@@ -365,6 +343,7 @@ async function fromFileLoadAccounts() {
 }
 async function _fromFileLoadAccounts() {
 	fs.readFile(account_file, function(err, data) {
+
 		var json = JSON.parse(data);
 		account_array = JSON.parse(data);
 		Object.entries(json).forEach((entry) => {
@@ -400,7 +379,7 @@ function fromVariableLoadAccounts() {
 
 function updateAccountList() {
 
-	myConsole.log("UPDATE");
+	//myConsole.log("UPDATE");
 	var elements = accounts_form.getElementsByClassName("account_li");
 	while (elements[0]) {
 		elements[0].parentNode.removeChild(elements[0]);
@@ -491,22 +470,13 @@ function saveSetting(){
 	  });
 
 }
-function autoLogin(username){
-	isRunning('RiotClientServices', (status) => {
-		if (!status) {
-			id = client_path;
-			var dirgame = path.dirname(id);
-			var namegame = path.basename(id);
-			exec(namegame, {
-				cwd: dirgame
-			});
-		}
-		//funzione che aspetta che il client sia effittivamente aperto e che filla i campi
-	});
+function autoLogin(username,password){
+		let hide_window="windowsHide";
+		spawnSync('Cscript', [vbs_path,username,password,hide_window]);
 
 }
+
 //MAIN CODE, no need to wait for page loading cause defer;
 
 settings_array= readSettingsFromFile(settings_file);
-
 updateAccountList();
